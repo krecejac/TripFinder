@@ -18,6 +18,11 @@ class Place(BaseModel):
     lat: float
     lng: float
 
+@app.get("/trips")
+def list_trips(db: Session = Depends(get_db)):
+    trips = db.query(models.Trip).all()
+    return trips
+
 @app.post("/trips")
 def create_trip(trip: Trip, db: Session = Depends(get_db)):
     db_trip = models.Trip(city=trip.city, days=trip.days)
