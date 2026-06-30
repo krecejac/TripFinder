@@ -13,6 +13,7 @@ class Place(BaseModel):
     lat: float
     lng: float
 
+#random comment
 @app.post("/plan")
 def plan_trip(places: list[Place], days: int):
     ordered = sort_by_nearest(places)
