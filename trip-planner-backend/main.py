@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from database import engine, get_db
 import models
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware # for CORS
 from pydantic import BaseModel
 import math
 
@@ -9,6 +10,13 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+#abysme mohli volat z frontnendu, musime povolit CORS (Cross-Origin Resource Sharing)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 class Trip(BaseModel):
     city: str
     days: int
