@@ -1,9 +1,9 @@
+from sqlalchemy.orm import Session
+from database import engine, get_db
+import models
 from fastapi import FastAPI, Depends
 from pydantic import BaseModel
 import math
-import models
-from database import engine, get_db
-from sqlalchemy.orm import Session
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -36,6 +36,26 @@ def plan_trip(places: list[Place], days: int):
     ordered = sort_by_nearest(places)
     result = split_places(ordered, days)
     return {"days": days, "itinerary": result}
+
+@app.post("/trips/{trip_id}/places")
+def add_place(trip_id: int, place: Place, db: Session = Depends(get_db)):
+    db_place = models.Place(
+        name=place.name,
+        lat=place.lat,
+        lng=place.lng,
+        trip_id=trip_id
+    )
+    db.add(db_place)
+    db.commit()
+    db.refresh(db_place)
+    return db_place
+
+@app.delete("/places/{place_id}")
+def delete_place(place_id: int, db: Session = Depends(get_db)):
+    place = db.query(models.Place).filter(models.Place.id == place_id).first()
+    db.delete(place)
+    db.commit()
+    return {"deleted": place_id}
 
 def split_places(places, days):
     n = len(places)
