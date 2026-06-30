@@ -1,3 +1,7 @@
 venv/
-__pychache__/
+__pycache__/
 *.pyc
+.pytest_cache/
+*.db
+node_modules/
+dist/
