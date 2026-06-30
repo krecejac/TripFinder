@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from database import engine, get_db
 import models
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from pydantic import BaseModel
 import math
 
@@ -56,6 +56,18 @@ def delete_place(place_id: int, db: Session = Depends(get_db)):
     db.delete(place)
     db.commit()
     return {"deleted": place_id}
+
+@app.patch("/places/{place_id}")
+def update_place(place_id: int, place: Place, db: Session = Depends(get_db)):
+    db_place = db.query(models.Place).filter(models.Place.id == place_id).first()
+    if db_place is None:
+        raise HTTPException(status_code=404, detail="Place not found")
+    db_place.name = place.name
+    db_place.lat = place.lat
+    db_place.lng = place.lng
+    db.commit()
+    db.refresh(db_place)
+    return db_place
 
 def split_places(places, days):
     n = len(places)
