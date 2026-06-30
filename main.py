@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 import math
+import models
+from database import engine
+
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
@@ -13,7 +17,6 @@ class Place(BaseModel):
     lat: float
     lng: float
 
-#random comment
 @app.post("/plan")
 def plan_trip(places: list[Place], days: int):
     ordered = sort_by_nearest(places)
