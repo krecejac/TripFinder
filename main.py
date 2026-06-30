@@ -1,8 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from pydantic import BaseModel
 import math
 import models
-from database import engine
+from database import engine, get_db
+from sqlalchemy.orm import Session
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -16,6 +17,14 @@ class Place(BaseModel):
     name: str
     lat: float
     lng: float
+
+@app.post("/trips")
+def create_trip(trip: Trip, db: Session = Depends(get_db)):
+    db_trip = models.Trip(city=trip.city, days=trip.days)
+    db.add(db_trip)
+    db.commit()
+    db.refresh(db_trip)
+    return db_trip
 
 @app.post("/plan")
 def plan_trip(places: list[Place], days: int):
