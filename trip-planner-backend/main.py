@@ -5,6 +5,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware # for CORS
 from pydantic import BaseModel
 import math
+import httpx
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -116,3 +117,53 @@ def sort_by_nearest(places):
         remaining.remove(next_place)
         start = next_place
     return ordered
+
+def geocode(city: str):
+    url = "https://nominatim.openstreetmap.org/search"
+    params = {"q": city, "format": "json"}
+    headers = {"User-Agent": "TripPlanner"}
+    response = httpx.get(url, params=params, headers=headers)
+    data = response.json()
+    first = data[0]
+    return {"lat": float(first["lat"]), "lng": float(first["lon"])}
+
+@app.get("/geocode/{city}")
+def geocode_endpoint(city: str):
+    return geocode(city)
+
+def find_places(lat: float, lng: float):
+    query = f"""
+    [out:json];
+    (
+      node[natural=beach](around:15000,{lat},{lng});
+      node[tourism=viewpoint](around:15000,{lat},{lng});
+    );
+    out 20;
+    """
+    url = "https://overpass-api.de/api/interpreter"
+    try:
+        response = httpx.post(
+            url,
+            content=query,
+            headers={"User-Agent": "TripPlanner"},
+            timeout=30.0,
+        )
+        data = response.json()
+    except (httpx.HTTPError, ValueError):
+        raise HTTPException(status_code=503, detail="Overpass je nedostupny, zkus to znovu")
+
+    places = []
+    for element in data["elements"]:
+        tags = element.get("tags", {})
+        if "name" in tags:
+            places.append({
+                "name": tags["name"],
+                "lat": element["lat"],
+                "lng": element["lon"],
+            })
+    return places
+
+@app.get("/find/{city}")
+def find_endpoint(city: str):
+    coords = geocode(city)
+    return find_places(coords["lat"], coords["lng"])
