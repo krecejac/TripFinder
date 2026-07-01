@@ -58,6 +58,11 @@ def add_place(trip_id: int, place: Place, db: Session = Depends(get_db)):
     db.refresh(db_place)
     return db_place
 
+@app.get("/trips/{trip_id}/places")
+def list_places(trip_id: int, db: Session = Depends(get_db)):
+    places = db.query(models.Place).filter(models.Place.trip_id == trip_id).all()
+    return places
+
 @app.delete("/places/{place_id}")
 def delete_place(place_id: int, db: Session = Depends(get_db)):
     place = db.query(models.Place).filter(models.Place.id == place_id).first()
